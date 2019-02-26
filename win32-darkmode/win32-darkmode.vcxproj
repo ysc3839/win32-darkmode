@@ -148,6 +148,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="DarkMode.h" />
+    <ClInclude Include="IatHook.h" />
     <ClInclude Include="ListViewUtil.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
