@@ -135,7 +135,7 @@ void InitDarkMode()
 		DWORD major, minor;
 		RtlGetNtVersionNumbers(&major, &minor, &g_buildNumber);
 		g_buildNumber &= ~0xF0000000;
-		if (major == 10 && minor == 0 && 17763 <= g_buildNumber && g_buildNumber <= 18334) // Windows 10 1809 10.0.17763 - Insider 10.0.18334
+		if (major == 10 && minor == 0 && 17763 <= g_buildNumber && g_buildNumber <= 18343) // Windows 10 1809 10.0.17763 - Insider 10.0.18343
 		{
 			HMODULE hUxtheme = LoadLibraryExW(L"uxtheme.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
 			if (hUxtheme)
