@@ -110,7 +110,7 @@ void FixDarkScrollBar()
 	if (addr)
 	{
 		DWORD oldProtect;
-		if (VirtualProtect(addr, sizeof(IMAGE_THUNK_DATA), PAGE_EXECUTE_READWRITE, &oldProtect))
+		if (VirtualProtect(addr, sizeof(IMAGE_THUNK_DATA), PAGE_READWRITE, &oldProtect))
 		{
 			auto MyOpenThemeData = [](HWND hWnd, LPCWSTR classList) -> HTHEME {
 				if (wcscmp(classList, L"ScrollBar") == 0)
