@@ -67,6 +67,8 @@ void InitListView(HWND hListView)
 					}
 
 					SendMessageW(hHeader, WM_THEMECHANGED, wParam, lParam);
+
+					RedrawWindow(hWnd, nullptr, nullptr, RDW_FRAME | RDW_INVALIDATE);
 				}
 			}
 			break;
