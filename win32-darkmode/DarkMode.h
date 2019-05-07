@@ -135,7 +135,7 @@ void InitDarkMode()
 		DWORD major, minor;
 		RtlGetNtVersionNumbers(&major, &minor, &g_buildNumber);
 		g_buildNumber &= ~0xF0000000;
-		if (major == 10 && minor == 0 && 17763 <= g_buildNumber && g_buildNumber <= 18343) // Windows 10 1809 10.0.17763 - Insider 10.0.18343
+		if (major == 10 && minor == 0 && 17763 <= g_buildNumber && g_buildNumber <= 18362) // Windows 10 1809 10.0.17763 - 1903 10.0.18362
 		{
 			HMODULE hUxtheme = LoadLibraryExW(L"uxtheme.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
 			if (hUxtheme)
@@ -147,7 +147,7 @@ void InitDarkMode()
 				_AllowDarkModeForWindow = reinterpret_cast<fnAllowDarkModeForWindow>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(133)));
 
 				auto ord135 = GetProcAddress(hUxtheme, MAKEINTRESOURCEA(135));
-				if (g_buildNumber == 18334)
+				if (g_buildNumber < 18334)
 					_AllowDarkModeForApp = reinterpret_cast<fnAllowDarkModeForApp>(ord135);
 				else
 					_SetPreferredAppMode = reinterpret_cast<fnSetPreferredAppMode>(ord135);
