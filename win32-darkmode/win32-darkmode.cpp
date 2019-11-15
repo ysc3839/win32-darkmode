@@ -184,7 +184,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	wcex.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
 	wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_WIN32DARKMODE);
 	wcex.lpszClassName = L"win32-darkmode";
-	wcex.hIconSm = LoadIconW(wcex.hInstance, MAKEINTRESOURCEW(IDI_SMALL));
+	wcex.hIconSm = LoadIconW(wcex.hInstance, MAKEINTRESOURCEW(IDI_WIN32DARKMODE));
 
 	RegisterClassExW(&wcex);
 
