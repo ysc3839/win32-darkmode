@@ -172,8 +172,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	if (!g_darkModeSupported)
 	{
-		int retval;
-		TaskDialog(nullptr, hInstance, L"Error", nullptr, L"Darkmode is not supported.", TDCBF_OK_BUTTON, TD_ERROR_ICON, &retval);
+		TaskDialog(nullptr, hInstance, L"Error", nullptr, L"Darkmode is not supported.", TDCBF_OK_BUTTON, TD_ERROR_ICON, nullptr);
 	}
 
 	WNDCLASSEXW wcex{};
