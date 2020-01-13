@@ -114,7 +114,7 @@ void RefreshTitleBarThemeColor(HWND hWnd)
 		dark = TRUE;
 	}
 	if (g_buildNumber < 18362)
-		SetPropW(hWnd, L"UseImmersiveDarkModeColors", reinterpret_cast<HANDLE>(dark));
+		SetPropW(hWnd, L"UseImmersiveDarkModeColors", reinterpret_cast<HANDLE>(static_cast<INT_PTR>(dark)));
 	else if (_SetWindowCompositionAttribute)
 	{
 		WINDOWCOMPOSITIONATTRIBDATA data = { WCA_USEDARKMODECOLORS, &dark, sizeof(dark) };
