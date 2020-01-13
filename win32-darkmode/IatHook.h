@@ -22,6 +22,7 @@ constexpr T DataDirectoryFromModuleBase(void *moduleBase, size_t entryID)
 
 PIMAGE_THUNK_DATA FindAddressByName(void *moduleBase, PIMAGE_THUNK_DATA impName, PIMAGE_THUNK_DATA impAddr, const char *funcName)
 {
+	if (!moduleBase)return NULL;
 	for (; impName->u1.Ordinal; ++impName, ++impAddr)
 	{
 		if (IMAGE_SNAP_BY_ORDINAL(impName->u1.Ordinal))
@@ -37,6 +38,7 @@ PIMAGE_THUNK_DATA FindAddressByName(void *moduleBase, PIMAGE_THUNK_DATA impName,
 
 PIMAGE_THUNK_DATA FindAddressByOrdinal(void *moduleBase, PIMAGE_THUNK_DATA impName, PIMAGE_THUNK_DATA impAddr, uint16_t ordinal)
 {
+	if (!moduleBase)return NULL;
 	for (; impName->u1.Ordinal; ++impName, ++impAddr)
 	{
 		if (IMAGE_SNAP_BY_ORDINAL(impName->u1.Ordinal) && IMAGE_ORDINAL(impName->u1.Ordinal) == ordinal)
@@ -47,6 +49,7 @@ PIMAGE_THUNK_DATA FindAddressByOrdinal(void *moduleBase, PIMAGE_THUNK_DATA impNa
 
 PIMAGE_THUNK_DATA FindIatThunkInModule(void *moduleBase, const char *dllName, const char *funcName)
 {
+	if (!moduleBase)return NULL;
 	auto imports = DataDirectoryFromModuleBase<PIMAGE_IMPORT_DESCRIPTOR>(moduleBase, IMAGE_DIRECTORY_ENTRY_IMPORT);
 	for (; imports->Name; ++imports)
 	{
@@ -62,6 +65,7 @@ PIMAGE_THUNK_DATA FindIatThunkInModule(void *moduleBase, const char *dllName, co
 
 PIMAGE_THUNK_DATA FindDelayLoadThunkInModule(void *moduleBase, const char *dllName, const char *funcName)
 {
+	if (!moduleBase)return NULL;
 	auto imports = DataDirectoryFromModuleBase<PIMAGE_DELAYLOAD_DESCRIPTOR>(moduleBase, IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT);
 	for (; imports->DllNameRVA; ++imports)
 	{
@@ -77,6 +81,7 @@ PIMAGE_THUNK_DATA FindDelayLoadThunkInModule(void *moduleBase, const char *dllNa
 
 PIMAGE_THUNK_DATA FindDelayLoadThunkInModule(void *moduleBase, const char *dllName, uint16_t ordinal)
 {
+	if (!moduleBase)return NULL;
 	auto imports = DataDirectoryFromModuleBase<PIMAGE_DELAYLOAD_DESCRIPTOR>(moduleBase, IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT);
 	for (; imports->DllNameRVA; ++imports)
 	{

@@ -106,7 +106,14 @@ bool IsHighContrast()
 
 void RefreshTitleBarThemeColor(HWND hWnd)
 {
-	BOOL dark = FALSE;
+	//Ensure that dark has the correct width
+#if _WIN64
+	UINT64 dark = FALSE;
+#elif _WIN32
+	UINT32 dark = FALSE;
+#else
+#error void* size not predetermined. Please look it up and add it here
+#endif
 	if (_IsDarkModeAllowedForWindow(hWnd) &&
 		_ShouldAppsUseDarkMode() &&
 		!IsHighContrast())
