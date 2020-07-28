@@ -58,11 +58,11 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 		if (g_darkModeSupported)
 		{
-			_AllowDarkModeForWindow(hDlg, g_darkModeEnabled);
+			AllowDarkModeForWindow(hDlg, g_darkModeEnabled);
 			RefreshTitleBarThemeColor(hDlg);
 
 			HWND hButton = GetDlgItem(hDlg, IDOK);
-			_AllowDarkModeForWindow(hButton, g_darkModeEnabled);
+			AllowDarkModeForWindow(hButton, g_darkModeEnabled);
 			SendMessageW(hButton, WM_THEMECHANGED, 0, 0);
 
 			UpdateWindow(hDlg);
@@ -81,7 +81,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 		if (g_darkModeSupported)
 		{
-			_AllowDarkModeForWindow(hWnd, true);
+			AllowDarkModeForWindow(hWnd, true);
 			RefreshTitleBarThemeColor(hWnd);
 		}
 
@@ -143,7 +143,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 		if (IsColorSchemeChangeMessage(lParam))
 		{
-			g_darkModeEnabled = _ShouldAppsUseDarkMode() && !IsHighContrast();
+			g_darkModeEnabled = ShouldAppsUseDarkMode() && !IsHighContrast();
 
 			RefreshTitleBarThemeColor(hWnd);
 			SendMessageW(g_hWndListView, WM_THEMECHANGED, 0, 0);

@@ -1,5 +1,6 @@
 #pragma once
 #include "IatHook.h"
+#include "delayimp.h"
 
 enum IMMERSIVE_HC_CACHE_MODE
 {
@@ -56,45 +57,32 @@ struct WINDOWCOMPOSITIONATTRIBDATA
 	SIZE_T cbData;
 };
 
-using fnRtlGetNtVersionNumbers = void (WINAPI *)(LPDWORD major, LPDWORD minor, LPDWORD build);
-using fnSetWindowCompositionAttribute = BOOL (WINAPI *)(HWND hWnd, WINDOWCOMPOSITIONATTRIBDATA*);
-// 1809 17763
-using fnShouldAppsUseDarkMode = bool (WINAPI *)(); // ordinal 132
-using fnAllowDarkModeForWindow = bool (WINAPI *)(HWND hWnd, bool allow); // ordinal 133
-using fnAllowDarkModeForApp = bool (WINAPI *)(bool allow); // ordinal 135, in 1809
-using fnFlushMenuThemes = void (WINAPI *)(); // ordinal 136
-using fnRefreshImmersiveColorPolicyState = void (WINAPI *)(); // ordinal 104
-using fnIsDarkModeAllowedForWindow = bool (WINAPI *)(HWND hWnd); // ordinal 137
-using fnGetIsImmersiveColorUsingHighContrast = bool (WINAPI *)(IMMERSIVE_HC_CACHE_MODE mode); // ordinal 106
-using fnOpenNcThemeData = HTHEME(WINAPI *)(HWND hWnd, LPCWSTR pszClassList); // ordinal 49
-// 1903 18362
-using fnShouldSystemUseDarkMode = bool (WINAPI *)(); // ordinal 138
-using fnSetPreferredAppMode = PreferredAppMode (WINAPI *)(PreferredAppMode appMode); // ordinal 135, in 1903
-using fnIsDarkModeAllowedForApp = bool (WINAPI *)(); // ordinal 139
+extern "C" {
+	NTSYSAPI VOID NTAPI RtlGetNtVersionNumbers(_Out_ LPDWORD major, _Out_ LPDWORD minor, _Out_ LPDWORD build);
+	WINUSERAPI BOOL WINAPI SetWindowCompositionAttribute(_In_ HWND hWnd, _In_ WINDOWCOMPOSITIONATTRIBDATA*);
 
-fnSetWindowCompositionAttribute _SetWindowCompositionAttribute = nullptr;
-fnShouldAppsUseDarkMode _ShouldAppsUseDarkMode = nullptr;
-fnAllowDarkModeForWindow _AllowDarkModeForWindow = nullptr;
-fnAllowDarkModeForApp _AllowDarkModeForApp = nullptr;
-fnFlushMenuThemes _FlushMenuThemes = nullptr;
-fnRefreshImmersiveColorPolicyState _RefreshImmersiveColorPolicyState = nullptr;
-fnIsDarkModeAllowedForWindow _IsDarkModeAllowedForWindow = nullptr;
-fnGetIsImmersiveColorUsingHighContrast _GetIsImmersiveColorUsingHighContrast = nullptr;
-fnOpenNcThemeData _OpenNcThemeData = nullptr;
-// 1903 18362
-fnShouldSystemUseDarkMode _ShouldSystemUseDarkMode = nullptr;
-fnSetPreferredAppMode _SetPreferredAppMode = nullptr;
+	// 1809 17763
+	THEMEAPI_(bool) ShouldAppsUseDarkMode(); // ordinal 132
+	THEMEAPI_(bool) AllowDarkModeForWindow(HWND hWnd, bool allow); // ordinal 133
+	THEMEAPI_(bool) AllowDarkModeForApp(bool allow); // ordinal 135, in 1809
+	THEMEAPI_(VOID) FlushMenuThemes(); // ordinal 136
+	THEMEAPI_(VOID) RefreshImmersiveColorPolicyState(); // ordinal 104
+	THEMEAPI_(bool) IsDarkModeAllowedForWindow(HWND hWnd); // ordinal 137
+	THEMEAPI_(bool) GetIsImmersiveColorUsingHighContrast(IMMERSIVE_HC_CACHE_MODE mode); // ordinal 106
+	THEMEAPI_(HTHEME) OpenNcThemeData(HWND hWnd, LPCWSTR pszClassList); // ordinal 49
+
+	// 1903 18362
+	THEMEAPI_(bool) ShouldSystemUseDarkMode(); // ordinal 138
+	//THEMEAPI_(PreferredAppMode) SetPreferredAppMode(PreferredAppMode appMode); // ordinal 135, in 1903
+	THEMEAPI_(bool) IsDarkModeAllowedForApp(); // ordinal 139
+}
+
+using fnOpenNcThemeData = HTHEME(WINAPI*)(HWND hWnd, LPCWSTR pszClassList); // ordinal 49
+using fnSetPreferredAppMode = PreferredAppMode(WINAPI*)(PreferredAppMode appMode); // ordinal 135, in 1903
 
 bool g_darkModeSupported = false;
 bool g_darkModeEnabled = false;
 DWORD g_buildNumber = 0;
-
-bool AllowDarkModeForWindow(HWND hWnd, bool allow)
-{
-	if (g_darkModeSupported)
-		return _AllowDarkModeForWindow(hWnd, allow);
-	return false;
-}
 
 bool IsHighContrast()
 {
@@ -107,18 +95,18 @@ bool IsHighContrast()
 void RefreshTitleBarThemeColor(HWND hWnd)
 {
 	BOOL dark = FALSE;
-	if (_IsDarkModeAllowedForWindow(hWnd) &&
-		_ShouldAppsUseDarkMode() &&
+	if (IsDarkModeAllowedForWindow(hWnd) &&
+		ShouldAppsUseDarkMode() &&
 		!IsHighContrast())
 	{
 		dark = TRUE;
 	}
 	if (g_buildNumber < 18362)
 		SetPropW(hWnd, L"UseImmersiveDarkModeColors", reinterpret_cast<HANDLE>(static_cast<INT_PTR>(dark)));
-	else if (_SetWindowCompositionAttribute)
+	else
 	{
 		WINDOWCOMPOSITIONATTRIBDATA data = { WCA_USEDARKMODECOLORS, &dark, sizeof(dark) };
-		_SetWindowCompositionAttribute(hWnd, &data);
+		SetWindowCompositionAttribute(hWnd, &data);
 	}
 }
 
@@ -127,10 +115,10 @@ bool IsColorSchemeChangeMessage(LPARAM lParam)
 	bool is = false;
 	if (lParam && CompareStringOrdinal(reinterpret_cast<LPCWCH>(lParam), -1, L"ImmersiveColorSet", -1, TRUE) == CSTR_EQUAL)
 	{
-		_RefreshImmersiveColorPolicyState();
+		RefreshImmersiveColorPolicyState();
 		is = true;
 	}
-	_GetIsImmersiveColorUsingHighContrast(IHCM_REFRESH);
+	GetIsImmersiveColorUsingHighContrast(IHCM_REFRESH);
 	return is;
 }
 
@@ -141,12 +129,12 @@ bool IsColorSchemeChangeMessage(UINT message, LPARAM lParam)
 	return false;
 }
 
-void AllowDarkModeForApp(bool allow)
+void _AllowDarkModeForApp(bool allow)
 {
-	if (_AllowDarkModeForApp)
-		_AllowDarkModeForApp(allow);
-	else if (_SetPreferredAppMode)
-		_SetPreferredAppMode(allow ? AllowDark : Default);
+	if (g_buildNumber < 18362)
+		AllowDarkModeForApp(allow);
+	else
+		reinterpret_cast<fnSetPreferredAppMode>(AllowDarkModeForApp)(allow ? AllowDark : Default);
 }
 
 void FixDarkScrollBar()
@@ -166,7 +154,7 @@ void FixDarkScrollBar()
 						hWnd = nullptr;
 						classList = L"Explorer::ScrollBar";
 					}
-					return _OpenNcThemeData(hWnd, classList);
+					return OpenNcThemeData(hWnd, classList);
 				};
 
 				addr->u1.Function = reinterpret_cast<ULONG_PTR>(static_cast<fnOpenNcThemeData>(MyOpenThemeData));
@@ -186,52 +174,27 @@ constexpr bool CheckBuildNumber(DWORD buildNumber)
 
 void InitDarkMode()
 {
-	auto RtlGetNtVersionNumbers = reinterpret_cast<fnRtlGetNtVersionNumbers>(GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "RtlGetNtVersionNumbers"));
-	if (RtlGetNtVersionNumbers)
-	{
 		DWORD major, minor;
 		RtlGetNtVersionNumbers(&major, &minor, &g_buildNumber);
 		g_buildNumber &= ~0xF0000000;
 		if (major == 10 && minor == 0 && CheckBuildNumber(g_buildNumber))
 		{
-			HMODULE hUxtheme = LoadLibraryExW(L"uxtheme.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
-			if (hUxtheme)
+			__try
 			{
-				_OpenNcThemeData = reinterpret_cast<fnOpenNcThemeData>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(49)));
-				_RefreshImmersiveColorPolicyState = reinterpret_cast<fnRefreshImmersiveColorPolicyState>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(104)));
-				_GetIsImmersiveColorUsingHighContrast = reinterpret_cast<fnGetIsImmersiveColorUsingHighContrast>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(106)));
-				_ShouldAppsUseDarkMode = reinterpret_cast<fnShouldAppsUseDarkMode>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(132)));
-				_AllowDarkModeForWindow = reinterpret_cast<fnAllowDarkModeForWindow>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(133)));
-
-				auto ord135 = GetProcAddress(hUxtheme, MAKEINTRESOURCEA(135));
-				if (g_buildNumber < 18362)
-					_AllowDarkModeForApp = reinterpret_cast<fnAllowDarkModeForApp>(ord135);
-				else
-					_SetPreferredAppMode = reinterpret_cast<fnSetPreferredAppMode>(ord135);
-
-				//_FlushMenuThemes = reinterpret_cast<fnFlushMenuThemes>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(136)));
-				_IsDarkModeAllowedForWindow = reinterpret_cast<fnIsDarkModeAllowedForWindow>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(137)));
-
-				_SetWindowCompositionAttribute = reinterpret_cast<fnSetWindowCompositionAttribute>(GetProcAddress(GetModuleHandleW(L"user32.dll"), "SetWindowCompositionAttribute"));
-
-				if (_OpenNcThemeData &&
-					_RefreshImmersiveColorPolicyState &&
-					_ShouldAppsUseDarkMode &&
-					_AllowDarkModeForWindow &&
-					(_AllowDarkModeForApp || _SetPreferredAppMode) &&
-					//_FlushMenuThemes &&
-					_IsDarkModeAllowedForWindow)
-				{
-					g_darkModeSupported = true;
-
-					AllowDarkModeForApp(true);
-					_RefreshImmersiveColorPolicyState();
-
-					g_darkModeEnabled = _ShouldAppsUseDarkMode() && !IsHighContrast();
-
-					FixDarkScrollBar();
-				}
+				__HrLoadAllImportsForDll("UxTheme.dll"); // Case sensitive
 			}
+			__except (GetExceptionCode() == VcppException(ERROR_SEVERITY_ERROR, ERROR_PROC_NOT_FOUND) ? EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH)
+			{
+				return;
+			}
+
+			g_darkModeSupported = true;
+
+			_AllowDarkModeForApp(true);
+			RefreshImmersiveColorPolicyState();
+
+			g_darkModeEnabled = ShouldAppsUseDarkMode() && !IsHighContrast();
+
+			FixDarkScrollBar();
 		}
-	}
 }
