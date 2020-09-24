@@ -1,3 +1,0 @@
-LIBRARY USER32.dll
-EXPORTS
-	SetWindowCompositionAttribute

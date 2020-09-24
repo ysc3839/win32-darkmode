@@ -7,8 +7,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "win32-darkmode", "win32-dar
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "uxtheme-stub", "uxtheme-stub\uxtheme-stub.vcxproj", "{0873B090-7FFD-4ABD-9B42-619A06C5041F}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "user32-stub", "user32-stub\user32-stub.vcxproj", "{1F757558-0E57-4DE5-82D6-A14E9D81F05F}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -33,14 +31,6 @@ Global
 		{0873B090-7FFD-4ABD-9B42-619A06C5041F}.Release|x64.Build.0 = Release|x64
 		{0873B090-7FFD-4ABD-9B42-619A06C5041F}.Release|x86.ActiveCfg = Release|Win32
 		{0873B090-7FFD-4ABD-9B42-619A06C5041F}.Release|x86.Build.0 = Release|Win32
-		{1F757558-0E57-4DE5-82D6-A14E9D81F05F}.Debug|x64.ActiveCfg = Debug|x64
-		{1F757558-0E57-4DE5-82D6-A14E9D81F05F}.Debug|x64.Build.0 = Debug|x64
-		{1F757558-0E57-4DE5-82D6-A14E9D81F05F}.Debug|x86.ActiveCfg = Debug|Win32
-		{1F757558-0E57-4DE5-82D6-A14E9D81F05F}.Debug|x86.Build.0 = Debug|Win32
-		{1F757558-0E57-4DE5-82D6-A14E9D81F05F}.Release|x64.ActiveCfg = Release|x64
-		{1F757558-0E57-4DE5-82D6-A14E9D81F05F}.Release|x64.Build.0 = Release|x64
-		{1F757558-0E57-4DE5-82D6-A14E9D81F05F}.Release|x86.ActiveCfg = Release|Win32
-		{1F757558-0E57-4DE5-82D6-A14E9D81F05F}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
