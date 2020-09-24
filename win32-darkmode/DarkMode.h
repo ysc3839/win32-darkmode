@@ -2,6 +2,17 @@
 #include "IatHook.h"
 #include "delayimp.h"
 
+#define USE_DWMAPI 0
+#define USE_GETVERSION 0
+
+#if USE_DWMAPI
+#include <Dwmapi.h>
+#pragma comment(lib, "Dwmapi.lib")
+#endif // USE_DWMAPI
+
+constexpr COLORREF darkBkColor = 0x383838;
+constexpr COLORREF darkTextColor = 0xFFFFFF;
+
 enum IMMERSIVE_HC_CACHE_MODE
 {
 	IHCM_USE_CACHED_VALUE,
@@ -9,7 +20,7 @@ enum IMMERSIVE_HC_CACHE_MODE
 };
 
 // 1903 18362
-enum PreferredAppMode
+enum class PreferredAppMode
 {
 	Default,
 	AllowDark,
@@ -77,11 +88,9 @@ extern "C" {
 	THEMEAPI_(bool) IsDarkModeAllowedForApp(); // ordinal 139
 }
 
-using fnOpenNcThemeData = HTHEME(WINAPI*)(HWND hWnd, LPCWSTR pszClassList); // ordinal 49
-using fnSetPreferredAppMode = PreferredAppMode(WINAPI*)(PreferredAppMode appMode); // ordinal 135, in 1903
+using fnSetPreferredAppMode = PreferredAppMode (WINAPI*)(PreferredAppMode appMode); // ordinal 135, in 1903
 
 bool g_darkModeSupported = false;
-bool g_darkModeEnabled = false;
 DWORD g_buildNumber = 0;
 
 bool IsHighContrast()
@@ -101,6 +110,11 @@ void RefreshTitleBarThemeColor(HWND hWnd)
 	{
 		dark = TRUE;
 	}
+#if USE_DWMAPI
+	if (SUCCEEDED(DwmSetWindowAttribute(hWnd, 20, &dark, sizeof(dark))))
+		return;
+	DwmSetWindowAttribute(hWnd, 19, &dark, sizeof(dark));
+#else // USE_DWMAPI
 	if (g_buildNumber < 18362)
 		SetPropW(hWnd, L"UseImmersiveDarkModeColors", reinterpret_cast<HANDLE>(static_cast<INT_PTR>(dark)));
 	else
@@ -108,6 +122,7 @@ void RefreshTitleBarThemeColor(HWND hWnd)
 		WINDOWCOMPOSITIONATTRIBDATA data = { WCA_USEDARKMODECOLORS, &dark, sizeof(dark) };
 		SetWindowCompositionAttribute(hWnd, &data);
 	}
+#endif // USE_DWMAPI
 }
 
 bool IsColorSchemeChangeMessage(LPARAM lParam)
@@ -129,12 +144,12 @@ bool IsColorSchemeChangeMessage(UINT message, LPARAM lParam)
 	return false;
 }
 
-void _AllowDarkModeForApp(bool allow)
+void SetAppDarkMode(bool allowDark)
 {
 	if (g_buildNumber < 18362)
-		AllowDarkModeForApp(allow);
+		AllowDarkModeForApp(allowDark);
 	else
-		reinterpret_cast<fnSetPreferredAppMode>(AllowDarkModeForApp)(allow ? AllowDark : Default);
+		reinterpret_cast<fnSetPreferredAppMode>(AllowDarkModeForApp)(allowDark ? PreferredAppMode::AllowDark : PreferredAppMode::Default);
 }
 
 void FixDarkScrollBar()
@@ -157,7 +172,7 @@ void FixDarkScrollBar()
 					return OpenNcThemeData(hWnd, classList);
 				};
 
-				addr->u1.Function = reinterpret_cast<ULONG_PTR>(static_cast<fnOpenNcThemeData>(MyOpenThemeData));
+				addr->u1.Function = reinterpret_cast<ULONG_PTR>(static_cast<decltype(OpenNcThemeData)*>(MyOpenThemeData));
 				VirtualProtect(addr, sizeof(IMAGE_THUNK_DATA), oldProtect, &oldProtect);
 			}
 		}
@@ -174,27 +189,45 @@ constexpr bool CheckBuildNumber(DWORD buildNumber)
 
 void InitDarkMode()
 {
-		DWORD major, minor;
-		RtlGetNtVersionNumbers(&major, &minor, &g_buildNumber);
-		g_buildNumber &= ~0xF0000000;
-		if (major == 10 && minor == 0 && CheckBuildNumber(g_buildNumber))
+	DWORD major, minor;
+#if USE_GETVERSION
+#pragma warning(push)
+#pragma warning(disable:4996)
+	DWORD version = GetVersion();
+#pragma warning(pop)
+	major = static_cast<DWORD>(LOBYTE(LOWORD(version)));
+	minor = static_cast<DWORD>(HIBYTE(LOWORD(version)));
+	if (version < 0x80000000)
+		g_buildNumber = static_cast<DWORD>(HIWORD(version));
+#else // USE_GETVERSION
+	RtlGetNtVersionNumbers(&major, &minor, &g_buildNumber);
+	g_buildNumber = static_cast<DWORD>(LOWORD(g_buildNumber));
+#endif // USE_GETVERSION
+	if (major == 10 && minor == 0 && CheckBuildNumber(g_buildNumber))
+	{
+		__try
 		{
-			__try
-			{
-				__HrLoadAllImportsForDll("UxTheme.dll"); // Case sensitive
-			}
-			__except (GetExceptionCode() == VcppException(ERROR_SEVERITY_ERROR, ERROR_PROC_NOT_FOUND) ? EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH)
-			{
-				return;
-			}
-
-			g_darkModeSupported = true;
-
-			_AllowDarkModeForApp(true);
-			RefreshImmersiveColorPolicyState();
-
-			g_darkModeEnabled = ShouldAppsUseDarkMode() && !IsHighContrast();
-
-			FixDarkScrollBar();
+			__HrLoadAllImportsForDll("UxTheme.dll"); // Case sensitive
 		}
+		__except (GetExceptionCode() == VcppException(ERROR_SEVERITY_ERROR, ERROR_PROC_NOT_FOUND) ? EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH)
+		{
+			return;
+		}
+
+		g_darkModeSupported = true;
+
+		SetAppDarkMode(true);
+		RefreshImmersiveColorPolicyState();
+
+		FixDarkScrollBar();
+	}
+}
+
+bool SetDarkThemeColors(HBRUSH& hbrBkgnd, HDC hdc)
+{
+	if (!hbrBkgnd)
+		hbrBkgnd = CreateSolidBrush(darkBkColor);
+	SetTextColor(hdc, darkTextColor);
+	SetBkColor(hdc, darkBkColor);
+	return !!hbrBkgnd;
 }

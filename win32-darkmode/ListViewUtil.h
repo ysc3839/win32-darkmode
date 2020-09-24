@@ -11,6 +11,9 @@ void InitListView(HWND hListView)
 
 	if (g_darkModeSupported)
 	{
+		AllowDarkModeForWindow(hListView, true);
+		AllowDarkModeForWindow(hHeader, true);
+
 		SetWindowSubclass(hListView, [](HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR /*uIdSubclass*/, DWORD_PTR dwRefData) -> LRESULT {
 			switch (uMsg)
 			{
@@ -35,41 +38,34 @@ void InitListView(HWND hListView)
 			break;
 			case WM_THEMECHANGED:
 			{
-				if (g_darkModeSupported)
+				HWND hHeader = ListView_GetHeader(hWnd);
+				HTHEME hTheme = OpenThemeData(nullptr, L"ItemsView");
+				if (hTheme)
 				{
-					HWND hHeader = ListView_GetHeader(hWnd);
-
-					AllowDarkModeForWindow(hWnd, g_darkModeEnabled);
-					AllowDarkModeForWindow(hHeader, g_darkModeEnabled);
-
-					HTHEME hTheme = OpenThemeData(nullptr, L"ItemsView");
-					if (hTheme)
+					COLORREF color;
+					if (SUCCEEDED(GetThemeColor(hTheme, 0, 0, TMT_TEXTCOLOR, &color)))
 					{
-						COLORREF color;
-						if (SUCCEEDED(GetThemeColor(hTheme, 0, 0, TMT_TEXTCOLOR, &color)))
-						{
-							ListView_SetTextColor(hWnd, color);
-						}
-						if (SUCCEEDED(GetThemeColor(hTheme, 0, 0, TMT_FILLCOLOR, &color)))
-						{
-							ListView_SetTextBkColor(hWnd, color);
-							ListView_SetBkColor(hWnd, color);
-						}
-						CloseThemeData(hTheme);
+						ListView_SetTextColor(hWnd, color);
 					}
-
-					hTheme = OpenThemeData(hHeader, L"Header");
-					if (hTheme)
+					if (SUCCEEDED(GetThemeColor(hTheme, 0, 0, TMT_FILLCOLOR, &color)))
 					{
-						auto info = reinterpret_cast<SubclassInfo*>(dwRefData);
-						GetThemeColor(hTheme, HP_HEADERITEM, 0, TMT_TEXTCOLOR, &(info->headerTextColor));
-						CloseThemeData(hTheme);
+						ListView_SetTextBkColor(hWnd, color);
+						ListView_SetBkColor(hWnd, color);
 					}
-
-					SendMessageW(hHeader, WM_THEMECHANGED, wParam, lParam);
-
-					RedrawWindow(hWnd, nullptr, nullptr, RDW_FRAME | RDW_INVALIDATE);
+					CloseThemeData(hTheme);
 				}
+
+				hTheme = OpenThemeData(hHeader, L"Header");
+				if (hTheme)
+				{
+					auto info = reinterpret_cast<SubclassInfo*>(dwRefData);
+					GetThemeColor(hTheme, HP_HEADERITEM, 0, TMT_TEXTCOLOR, &(info->headerTextColor));
+					CloseThemeData(hTheme);
+				}
+
+				SendMessageW(hHeader, WM_THEMECHANGED, wParam, lParam);
+
+				RedrawWindow(hWnd, nullptr, nullptr, RDW_FRAME | RDW_INVALIDATE);
 			}
 			break;
 			case WM_DESTROY:
@@ -86,7 +82,7 @@ void InitListView(HWND hListView)
 	ListView_SetExtendedListViewStyle(hListView, LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER | LVS_EX_HEADERDRAGDROP);
 
 	// Hide focus dots
-	SendMessage(hListView, WM_CHANGEUISTATE, MAKELONG(UIS_SET, UISF_HIDEFOCUS), 0);
+	SendMessageW(hListView, WM_CHANGEUISTATE, MAKELONG(UIS_SET, UISF_HIDEFOCUS), 0);
 
 	SetWindowTheme(hHeader, L"ItemsView", nullptr); // DarkMode
 	SetWindowTheme(hListView, L"ItemsView", nullptr); // DarkMode

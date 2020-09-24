@@ -5,9 +5,6 @@ HWND g_hWndListView;
 
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	UNREFERENCED_PARAMETER(lParam);
-	constexpr COLORREF darkBkColor = 0x383838;
-	constexpr COLORREF darkTextColor = 0xFFFFFF;
 	static HBRUSH hbrBkgnd = nullptr;
 	switch (message)
 	{
@@ -15,7 +12,12 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 		if (g_darkModeSupported)
 		{
-			SetWindowTheme(GetDlgItem(hDlg, IDOK), L"Explorer", nullptr);
+			HWND hButton = GetDlgItem(hDlg, IDOK);
+
+			AllowDarkModeForWindow(hDlg, true);
+			AllowDarkModeForWindow(hButton, true);
+
+			SetWindowTheme(hButton, L"Explorer", nullptr);
 			SendMessageW(hDlg, WM_THEMECHANGED, 0, 0);
 		}
 		return (INT_PTR)TRUE;
@@ -30,13 +32,11 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_CTLCOLORDLG:
 	case WM_CTLCOLORSTATIC:
 	{
-		if (g_darkModeSupported && g_darkModeEnabled)
+		if (g_darkModeSupported &&
+			ShouldAppsUseDarkMode() &&
+			!IsHighContrast() &&
+			SetDarkThemeColors(hbrBkgnd, reinterpret_cast<HDC>(wParam)))
 		{
-			HDC hdc = reinterpret_cast<HDC>(wParam);
-			SetTextColor(hdc, darkTextColor);
-			SetBkColor(hdc, darkBkColor);
-			if (!hbrBkgnd)
-				hbrBkgnd = CreateSolidBrush(darkBkColor);
 			return reinterpret_cast<INT_PTR>(hbrBkgnd);
 		}
 	}
@@ -58,14 +58,11 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 		if (g_darkModeSupported)
 		{
-			AllowDarkModeForWindow(hDlg, g_darkModeEnabled);
 			RefreshTitleBarThemeColor(hDlg);
 
-			HWND hButton = GetDlgItem(hDlg, IDOK);
-			AllowDarkModeForWindow(hButton, g_darkModeEnabled);
-			SendMessageW(hButton, WM_THEMECHANGED, 0, 0);
+			SendMessageW(GetDlgItem(hDlg, IDOK), WM_THEMECHANGED, 0, 0);
 
-			UpdateWindow(hDlg);
+			InvalidateRect(hDlg, nullptr, TRUE);
 		}
 	}
 	break;
@@ -143,8 +140,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 		if (IsColorSchemeChangeMessage(lParam))
 		{
-			g_darkModeEnabled = ShouldAppsUseDarkMode() && !IsHighContrast();
-
 			RefreshTitleBarThemeColor(hWnd);
 			SendMessageW(g_hWndListView, WM_THEMECHANGED, 0, 0);
 		}
@@ -159,15 +154,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
 	_In_ LPWSTR    lpCmdLine,
 	_In_ int       nCmdShow)
 {
-	UNREFERENCED_PARAMETER(hPrevInstance);
-	UNREFERENCED_PARAMETER(lpCmdLine);
-
 	InitDarkMode();
 
 	if (!g_darkModeSupported)
