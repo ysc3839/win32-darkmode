@@ -33,6 +33,9 @@
     <ClInclude Include="IatHook.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="UAHMenuBar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="win32-darkmode.cpp">
