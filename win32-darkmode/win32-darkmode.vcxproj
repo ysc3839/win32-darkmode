@@ -156,6 +156,7 @@
     <ClInclude Include="ListViewUtil.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="UAHMenuBar.h" />
     <ClInclude Include="win32-darkmode.h" />
   </ItemGroup>
   <ItemGroup>
