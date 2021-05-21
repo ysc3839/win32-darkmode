@@ -2,6 +2,7 @@
 
 #include <climits>
 #include <cstdint>
+#include <cstdlib>
 
 #include "targetver.h"
 #define WIN32_LEAN_AND_MEAN

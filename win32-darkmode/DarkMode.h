@@ -182,9 +182,8 @@ void FixDarkScrollBar()
 constexpr bool CheckBuildNumber(DWORD buildNumber)
 {
 	return (buildNumber == 17763 || // 1809
-		buildNumber == 18362 || // 1903
-		buildNumber == 18363 || // 1909
-		buildNumber == 19041); // 2004
+		buildNumber == 18362 || // 1903 & 1909
+		buildNumber == 19041); // 2004 & 20H2 & 21H1
 }
 
 void InitDarkMode()
@@ -197,13 +196,11 @@ void InitDarkMode()
 #pragma warning(pop)
 	major = static_cast<DWORD>(LOBYTE(LOWORD(version)));
 	minor = static_cast<DWORD>(HIBYTE(LOWORD(version)));
-	if (version < 0x80000000)
-		g_buildNumber = static_cast<DWORD>(HIWORD(version));
 #else // USE_GETVERSION
-	RtlGetNtVersionNumbers(&major, &minor, &g_buildNumber);
-	g_buildNumber = static_cast<DWORD>(LOWORD(g_buildNumber));
+	DWORD build;
+	RtlGetNtVersionNumbers(&major, &minor, &build);
 #endif // USE_GETVERSION
-	if (major == 10 && minor == 0 && CheckBuildNumber(g_buildNumber))
+	if (major == 10 && minor == 0)
 	{
 		__try
 		{
@@ -214,7 +211,39 @@ void InitDarkMode()
 			return;
 		}
 
-		g_darkModeSupported = true;
+		wchar_t path[MAX_PATH];
+		constexpr wchar_t uxtheme[] = L"uxtheme.dll";
+		UINT i = GetSystemDirectoryW(path, ARRAYSIZE(path));
+		if (i + 1 + ARRAYSIZE(uxtheme) <= ARRAYSIZE(path))
+		{
+			path[i] = L'\\';
+			memcpy(path + i + 1, uxtheme, ARRAYSIZE(uxtheme) * sizeof(wchar_t));
+
+			DWORD handle;
+			DWORD size = GetFileVersionInfoSizeExW(0, path, &handle);
+			if (size != 0)
+			{
+				LPVOID data = malloc(size);
+				if (data)
+				{
+					if (GetFileVersionInfoExW(0, path, handle, size, data))
+					{
+						VS_FIXEDFILEINFO* fileInfo;
+						UINT len;
+						if (VerQueryValueW(data, L"\\", reinterpret_cast<LPVOID*>(&fileInfo), &len))
+						{
+							g_buildNumber = static_cast<DWORD>(HIWORD(fileInfo->dwFileVersionLS));
+							if (CheckBuildNumber(g_buildNumber))
+								g_darkModeSupported = true;
+						}
+					}
+					free(data);
+				}
+			}
+		}
+
+		if (!g_darkModeSupported)
+			return;
 
 		SetAppDarkMode(true);
 		RefreshImmersiveColorPolicyState();
